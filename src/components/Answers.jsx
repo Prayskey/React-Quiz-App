@@ -1,11 +1,12 @@
-export default function Answers({ answers }) {
-  function handleAnswerClick(index) {
-    if (index === 0) {
-      alert("Correct!")
-    } else {
-      alert("Incorrect!")
-    }
-  }
+export default function Answers({ answers, onAnswerClick }) {
+  // function handleAnswerClick(index) {
+  //   if (index === 0) {
+  //     alert("Correct!")
+  //   } else {
+  //     alert("Incorrect!")
+  //   }
+  // }
+
   return (
     <ul id="answers">
       {/* 
@@ -19,7 +20,7 @@ export default function Answers({ answers }) {
       {answers.map((answer, index) => {
         return (
           <li className="answer" key={index}>
-            <button onClick={() => handleAnswerClick(index)} className="">
+            <button onClick={() => onAnswerClick(index)} className="">
               {answer}
             </button>
           </li>

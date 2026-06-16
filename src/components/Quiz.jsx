@@ -5,17 +5,22 @@ import { questions } from "../questions.js";
 
 export default function Quiz() {
   const [questionNumber, setQuestionNumber] = useState(0);
+  function handleAnswerClick(index) {
+    setQuestionNumber((questionNumber) => questionNumber + 1);
+  }
   return (
-    <section id="quiz">
-      
-      {questions.map((question) => {
-        return (
-          <Fragment key={question.id}>
-            <Question question={question.text} id={question.id} />
-            <Answers answers={question.answers} />
-          </Fragment>
-        );
-      })}
-    </section>
+    questionNumber < questions.length && (
+      <section key={questions[questionNumber].id} id="quiz">
+        <Question
+          question={questions[questionNumber].text}
+          id={questions[questionNumber].id}
+          noOfQuestions={questions.length}
+        />
+        <Answers
+          onAnswerClick={handleAnswerClick}
+          answers={questions[questionNumber].answers}
+        />
+      </section>
+    )
   );
 }

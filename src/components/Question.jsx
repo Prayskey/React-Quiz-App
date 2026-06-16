@@ -1,4 +1,4 @@
-export default function Question({ question, id }) {
+export default function Question({ question, id, noOfQuestions }) {
   return (
     <div id="question">
       {/* 'value' represents remaining time, 'max' is total time allowed */}
@@ -6,7 +6,9 @@ export default function Question({ question, id }) {
       <progress value={5000} max={10000} className="" />
 
       <h2>{question}</h2>
-      <p id="question-overview">Question {id} of 10</p>
+      <p id="question-overview">
+        Question {id} of {noOfQuestions}
+      </p>
     </div>
   );
 }
