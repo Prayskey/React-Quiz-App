@@ -69,59 +69,30 @@ Aim for a component-based architecture. Create a `components/` folder to house t
 
 ---
 
-_Happy Coding! You have all the styles you need in `index.css`. Refer to the IDs and Classes there to ensure the theme applies correctly._
+## 5. Implemented Features & Logic Summary
 
+### Key Implementation: The "Component Key" Pattern
 
-## 5. Detailed Phase Guide
+In `Quiz.jsx`, the `Question` component is rendered with `key={activeQuestionIndex}`.
+**Why?** This is a powerful React pattern. When the key changes, React destroys the old component instance and creates a new one. This automatically resets the internal timer, shuffles the answers, and clears any "selected" state from the previous question without manual cleanup logic.
 
+### Key Implementation: Multi-Stage Timeouts
 
+The `Question.jsx` component manages a complex feedback loop using nested `setTimeout` calls:
 
-### Phase 1: Data Structuring & Rendering
+1. **Click:** Immediate state update to `'answered'` (UI turns yellow).
+2. **1000ms later:** Logic checks correctness (UI turns Green/Red).
+3. **2000ms later:** The `onSelectAnswer` prop is called, moving the main quiz state forward.
 
-- **Goal:** Move from hardcoded text to dynamic data.
-- **Action:** Create a `questions.js` file containing an array of objects. Each object should have an `id`, `text`, and an `answers` array (where the first answer is always the correct one).
-- **React Concept:** Props & Mapping. Pass the current question text and answers from `Quiz.jsx` down to `Question.jsx` and `Answers.jsx`. Use `.map()` to render the buttons.
+### Key Implementation: Side Effect Management
 
-### Phase 2: Active Question State
+The `QuestionTimer.jsx` uses `useEffect` to manage `setInterval` (for the bar) and `setTimeout` (for the skip logic).
 
-- **Goal:** Allow the user to "progress" through the quiz.
-- **Action:** In `Quiz.jsx`, create a state `userAnswers` (an array).
-- **Logic:** The `activeQuestionIndex` should be a _derived state_ based on the length of `userAnswers`.
-- **Logic:** Create a function `handleSelectAnswer` that appends the chosen answer to the `userAnswers` state.
+- **Cleanup:** Every timer returns a cleanup function (`clearInterval`/`clearTimeout`). This prevents "memory leaks" and "zombie timers" that try to update state after a component has been destroyed.
 
-### Phase 3: Shuffling & Identity
+### Key Implementation: Memoized Shuffling
 
-- **Goal:** Ensure answers aren't always in the same order (since the first one is the correct one in your data).
-- **Action:** Inside `Answers.jsx`, shuffle the answers array.
-- **React Concept:** `useMemo` or `useRef`. If you shuffle during a raw render, the answers will jump every time the component re-renders (e.g., when a timer ticks). You must ensure the shuffle only happens once per question.
-
-### Phase 4: The Question Timer (Side Effects)
-
-- **Goal:** Automatically skip questions if the user is too slow.
-- **Action:** Create a `QuestionTimer.jsx` component. It should take a `timeout` prop and an `onTimeout` function.
-- **React Concept:** `useEffect`.
-  - Use `setTimeout` to call `onTimeout` (which should call `handleSelectAnswer(null)`) after the duration.
-  - Use `setInterval` to update a `remainingTime` state every 10ms to drive the smooth animation of the `<progress>` bar.
-  - **Crucial:** Always return a cleanup function to `clearTimeout` and `clearInterval`.
-
-### Phase 5: The Feedback Loop (State Transitions)
-
-- **Goal:** Provide visual feedback (Selected -> Correct/Wrong) before moving to the next question.
-- **Action:** This is the most complex part. You need a state to track the "Answer State" (e.g., `'unanswered'`, `'answered'`, `'correct'`, or `'wrong'`).
-- **Flow:**
-  1. User clicks: Set state to `'answered'`.
-  2. Wait 1s: Determine if it's correct/wrong and update state.
-  3. Wait 2s: Move to next question (reset state to `'unanswered'`).
-- **Tip:** Use `setTimeout` within your selection handler to manage these timed transitions.
-
-### Phase 6: Summary & Logic
-
-- **Goal:** Calculate results and display the final screen.
-- **Logic:** In `App.jsx` (or `Quiz.jsx`), check if `activeQuestionIndex === questions.length`. If true, render `<Summary />`.
-- **Action:** Pass the `userAnswers` array to the `Summary` component.
-- **Calculations:**
-  - Use `.filter()` and `.length` on `userAnswers` to calculate the percentage of skipped, correct, and incorrect answers.
-  - Map through `userAnswers` to render the list of questions and comparisons.
+Shuffling happens inside `Answers.jsx` using `useMemo`. This ensures the random order is calculated **only once** when the question changes, rather than every time the 10ms timer updates the UI.
 
 ## 6. Key React Hooks to Master in this Project
 
@@ -132,36 +103,3 @@ _Happy Coding! You have all the styles you need in `index.css`. Refer to the IDs
 | `useCallback` | Wrapping the answer selection handler so it doesn't trigger unnecessary effect re-runs. |
 | `useMemo`     | Ensuring answers are only shuffled once when the question index changes.                |
 | `useRef`      | (Optional) Storing values that shouldn't trigger re-renders.                            |
-
-## 7. Complete Application Logic Flow
-
-This is the "brain" of your app. Follow this sequence to understand how the components communicate:
-
-1.  **Mounting Phase:**
-    *   `App.jsx` renders. It initializes the `userAnswers` state (empty array).
-    *   `activeQuestionIndex` is derived: `userAnswers.length`.
-
-2.  **The Question Loop:**
-    *   `Quiz.jsx` checks if `activeQuestionIndex` is within bounds of the data.
-    *   If yes, it renders `Question.jsx`, passing the current question object.
-    *   `Answers.jsx` receives the options, **shuffles them once**, and renders buttons.
-    *   `QuestionTimer.jsx` starts its countdown and interval (for the progress bar).
-
-3.  **The Interaction Sequence (The "Check" Delay):**
-    *   User clicks a button.
-    *   **Step A:** Update local "Answer State" to `'answered'`. The button turns yellow.
-    *   **Step B (SetTimeout ~1s):** Logic checks if the answer matches `questions[index].answers[0]`. Update state to `'correct'` or `'wrong'`.
-    *   **Step C (SetTimeout ~2s):** Call `handleSelectAnswer`. This pushes the answer to the `userAnswers` array in `Quiz.jsx`.
-
-4.  **The Automatic Skip (Timeout):**
-    *   If the `QuestionTimer` expires before a click, it triggers `onTimeout`.
-    *   `handleSelectAnswer(null)` is called immediately, pushing `null` to the state.
-
-5.  **State Reaction:**
-    *   Updating `userAnswers` triggers a re-render of `Quiz.jsx`.
-    *   `userAnswers.length` increases, so `activeQuestionIndex` moves to the next question.
-    *   The loop repeats until `index === questions.length`.
-
-6.  **The Summary Phase:**
-    *   `Quiz.jsx` sees the index is out of bounds and renders `Summary.jsx`.
-    *   `Summary` iterates through `userAnswers` once to calculate the percentage of skipped (null), correct, and wrong answers.
